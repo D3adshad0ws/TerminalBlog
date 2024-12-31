@@ -3,6 +3,7 @@ import { useUser } from "./hooks/use-user";
 import { HomePage } from "./pages/HomePage";
 import { AdminPage } from "./pages/AdminPage";
 import { AuthPage } from "./pages/AuthPage";
+import { BlogPostPage } from "./pages/BlogPostPage";
 import { Loader2 } from "lucide-react";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
     return (
       <Switch>
         <Route path="/admin" component={AdminPage} />
+        <Route path="/post/:id" component={BlogPostPage} />
         <Route component={AdminPage} />
       </Switch>
     );
@@ -28,6 +30,7 @@ function App() {
   return (
     <Switch>
       <Route path="/login" component={AuthPage} />
+      <Route path="/post/:id" component={BlogPostPage} />
       <Route path="/" component={HomePage} />
       <Route component={HomePage} />
     </Switch>
