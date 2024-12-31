@@ -49,7 +49,7 @@ Available commands:
         setHistory([]);
         return '';
       case 'about':
-        return 'Welcome to my terminal-themed blog!';
+        return 'Welcome to my terminal-themed blog! This is a cybersecurity focused blog discussing various aspects of information security, state-sponsored attacks, and defense strategies.';
       case 'blog':
         if (!posts || posts.length === 0) {
           return 'No blog posts available.';
@@ -70,7 +70,8 @@ Date: ${new Date(post.createdAt).toLocaleDateString()}
 ${post.content}
 `;
       case 'contact':
-        return 'Email: example@example.com\nGitHub: @example';
+        return `Email: deadshadows@naver.com
+GitHub: https://github.com/D3adshad0ws`;
       default:
         return `Command not found: ${input}. Type 'help' for available commands.`;
     }
