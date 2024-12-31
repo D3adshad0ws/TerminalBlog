@@ -16,7 +16,7 @@ interface Post {
 
 interface GameState {
   isPlaying: boolean;
-  game: 'guess' | 'adventure' | 'hangman' | null;
+  game: 'guess' | 'hangman' | null;
   data: any;
 }
 
@@ -42,7 +42,7 @@ export function useTerminal() {
   };
 
   const handleGuessGame = (input: string): string => {
-    if (!gameState.isPlaying) {
+    if (!gameState.isPlaying || gameState.game !== 'guess') {
       setGameState({
         isPlaying: true,
         game: 'guess',
@@ -84,14 +84,14 @@ Game Over. Type 'guess' to play again.`;
   const handleHangmanGame = (input: string): string => {
     const words = ['FIREWALL', 'MALWARE', 'ENCRYPTION', 'VULNERABILITY', 'EXPLOIT'];
 
-    if (!gameState.isPlaying) {
+    if (!gameState.isPlaying || gameState.game !== 'hangman') {
       const word = words[Math.floor(Math.random() * words.length)];
       setGameState({
         isPlaying: true,
         game: 'hangman',
         data: {
           word,
-          guessed: new Set(),
+          guessed: new Set<string>(),
           remainingTries: 6,
         },
       });
@@ -99,7 +99,7 @@ Game Over. Type 'guess' to play again.`;
 Guess the security-related term by typing one letter at a time.
 You have 6 tries remaining.
 
-${getHangmanDisplay(word, new Set())}`;
+${getHangmanDisplay(word, new Set<string>())}`;
     }
 
     const letter = input.toUpperCase();
@@ -211,8 +211,9 @@ ${post.content}
         return `Email: deadshadows@naver.com
 GitHub: https://github.com/D3adshad0ws`;
       case 'guess':
+        return handleGuessGame(input);
       case 'hangman':
-        return handleCommand(command); //Recursive call to handle game start
+        return handleHangmanGame(input);
       default:
         return `Command not found: ${input}. Type 'help' for available commands.`;
     }
