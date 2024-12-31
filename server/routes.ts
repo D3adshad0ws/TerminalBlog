@@ -2,21 +2,160 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { db } from "@db";
-import { posts } from "@db/schema";
-import { eq } from "drizzle-orm";
-import {users} from "@db/schema" // Added import for users table
+import { posts, tags, postTags } from "@db/schema";
+import { eq, ilike, inArray } from "drizzle-orm";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
-  // Get public posts
-  app.get("/api/posts", async (_req, res) => {
-    const allPosts = await db
+  // Get all tags
+  app.get("/api/tags", async (_req, res) => {
+    const allTags = await db
       .select()
+      .from(tags)
+      .orderBy(tags.name);
+    res.json(allTags);
+  });
+
+  // Create tag (requires auth)
+  app.post("/api/tags", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Not authorized");
+    }
+
+    const { name } = req.body;
+    const [existingTag] = await db
+      .select()
+      .from(tags)
+      .where(eq(tags.name, name))
+      .limit(1);
+
+    if (existingTag) {
+      return res.status(400).send("Tag already exists");
+    }
+
+    const [newTag] = await db
+      .insert(tags)
+      .values({ name })
+      .returning();
+
+    res.json(newTag);
+  });
+
+  // Search posts by tag
+  app.get("/api/posts/tagged/:tagName", async (req, res) => {
+    const { tagName } = req.params;
+    const taggedPosts = await db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        content: posts.content,
+        isPublic: posts.isPublic,
+        createdAt: posts.createdAt,
+        tags: tags.name,
+      })
       .from(posts)
+      .leftJoin(postTags, eq(posts.id, postTags.postId))
+      .leftJoin(tags, eq(postTags.tagId, tags.id))
+      .where(eq(posts.isPublic, true))
+      .where(ilike(tags.name, `%${tagName}%`))
+      .orderBy(posts.createdAt);
+
+    res.json(taggedPosts);
+  });
+
+  // Get public posts with tags
+  app.get("/api/posts", async (_req, res) => {
+    const postsWithTags = await db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        content: posts.content,
+        isPublic: posts.isPublic,
+        createdAt: posts.createdAt,
+        tags: tags.name,
+      })
+      .from(posts)
+      .leftJoin(postTags, eq(posts.id, postTags.postId))
+      .leftJoin(tags, eq(postTags.tagId, tags.id))
       .where(eq(posts.isPublic, true))
       .orderBy(posts.createdAt);
-    res.json(allPosts);
+
+    // Group posts by ID and combine tags
+    const groupedPosts = postsWithTags.reduce((acc, curr) => {
+      const { tags: tag, ...post } = curr;
+      if (!acc[post.id]) {
+        acc[post.id] = { ...post, tags: [] };
+      }
+      if (tag) {
+        acc[post.id].tags.push(tag);
+      }
+      return acc;
+    }, {} as Record<number, any>);
+
+    res.json(Object.values(groupedPosts));
+  });
+
+  // Create post with tags (requires auth)
+  app.post("/api/posts", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Not authorized");
+    }
+
+    const { title, content, isPublic = true, tagNames = [] } = req.body;
+
+    // Start a transaction
+    try {
+      const [newPost] = await db
+        .insert(posts)
+        .values({
+          title,
+          content,
+          isPublic,
+          authorId: req.user!.id,
+        })
+        .returning();
+
+      // Handle tags
+      if (tagNames.length > 0) {
+        // Get or create tags
+        const existingTags = await db
+          .select()
+          .from(tags)
+          .where(inArray(tags.name, tagNames));
+
+        const existingTagNames = existingTags.map(t => t.name);
+        const newTagNames = tagNames.filter(name => !existingTagNames.includes(name));
+
+        let allTags = existingTags;
+        if (newTagNames.length > 0) {
+          const newTags = await db
+            .insert(tags)
+            .values(newTagNames.map(name => ({ name })))
+            .returning();
+          allTags = [...existingTags, ...newTags];
+        }
+
+        // Create post-tag relationships
+        await db
+          .insert(postTags)
+          .values(allTags.map(tag => ({
+            postId: newPost.id,
+            tagId: tag.id,
+          })));
+
+        // Return post with tags
+        const postWithTags = {
+          ...newPost,
+          tags: allTags.map(t => t.name),
+        };
+        res.json(postWithTags);
+      } else {
+        res.json({ ...newPost, tags: [] });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create post" });
+    }
   });
 
   // Get all posts (requires auth)
@@ -29,26 +168,6 @@ export function registerRoutes(app: Express): Server {
       .from(posts)
       .orderBy(posts.createdAt);
     res.json(allPosts);
-  });
-
-  // Create post (requires auth)
-  app.post("/api/posts", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authorized");
-    }
-
-    const { title, content, isPublic = true } = req.body;
-    const newPost = await db
-      .insert(posts)
-      .values({
-        title,
-        content,
-        isPublic,
-        authorId: req.user!.id,
-      })
-      .returning();
-
-    res.json(newPost[0]);
   });
 
   // Seed initial blog posts
