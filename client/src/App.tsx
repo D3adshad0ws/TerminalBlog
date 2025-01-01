@@ -5,6 +5,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { AuthPage } from "./pages/AuthPage";
 import { BlogPostPage } from "./pages/BlogPostPage";
 import { Loader2 } from "lucide-react";
+import { TteokbokkiGame } from "./components/games/TteokbokkiGame";
 
 function App() {
   const { user, isLoading } = useUser();
@@ -22,6 +23,7 @@ function App() {
       <Switch>
         <Route path="/admin" component={AdminPage} />
         <Route path="/post/:id" component={BlogPostPage} />
+        <Route path="/easter-egg/tteokbokki" component={TteokbokkiGame} />
         <Route component={AdminPage} />
       </Switch>
     );
@@ -31,6 +33,7 @@ function App() {
     <Switch>
       <Route path="/login" component={AuthPage} />
       <Route path="/post/:id" component={BlogPostPage} />
+      <Route path="/easter-egg/tteokbokki" component={TteokbokkiGame} />
       <Route path="/" component={HomePage} />
       <Route component={HomePage} />
     </Switch>
