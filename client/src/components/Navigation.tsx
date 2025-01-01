@@ -9,8 +9,7 @@ export function Navigation() {
   const { resetTerminal } = useTerminal();
 
   const handleReset = () => {
-    resetTerminal(); // Reset terminal state first
-    setLocation('/'); // Then navigate home
+    window.location.reload(); // Simply reload the page to reset everything
   };
 
   // We still fetch posts to maintain data consistency,
