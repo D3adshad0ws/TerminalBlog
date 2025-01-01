@@ -17,9 +17,14 @@ export function Terminal({ history, onCommand }: TerminalProps) {
   }, [history]);
 
   const handleCommand = (command: string) => {
+    const output = processCommand(command);
+    onCommand(command);
+    return output;
+  };
+
+  const processCommand = (command: string) => {
     switch (command.toLowerCase()) {
       case 'help':
-        onCommand(command);
         return `Available commands:
 - help: Show this help message
 - clear: Clear the terminal
@@ -33,7 +38,6 @@ export function Terminal({ history, onCommand }: TerminalProps) {
         setLocation('/easter-egg/kart-rider');
         return 'Launching Cyber Kart Rider...';
       default:
-        onCommand(command);
         return 'Unknown command. Type "help" for available commands.';
     }
   };
@@ -61,11 +65,7 @@ export function Terminal({ history, onCommand }: TerminalProps) {
       </ScrollArea>
 
       <div className="mt-4">
-        <TerminalInput onSubmit={(cmd) => {
-          const output = handleCommand(cmd);
-          onCommand(cmd);
-          return output;
-        }} />
+        <TerminalInput onSubmit={handleCommand} />
       </div>
     </div>
   );
