@@ -10,6 +10,8 @@ export function Navigation() {
     setLocation('/');
   };
 
+  // We still fetch posts to maintain data consistency,
+  // but we don't display them in the navigation anymore
   const { data: posts } = useQuery<Post[]>({
     queryKey: ['/api/posts'],
     staleTime: 5000,
@@ -24,17 +26,6 @@ export function Navigation() {
         >
           Reset Terminal
         </Button>
-        <div className="grid gap-3">
-          {posts?.map((post) => (
-            <a 
-              key={post.id} 
-              href={`/post/${post.id}`}
-              className="block p-2 hover:bg-[rgb(40,254,20)] hover:text-black text-[rgb(40,254,20)]"
-            >
-              {post.title}
-            </a>
-          ))}
-        </div>
       </div>
     </div>
   );
