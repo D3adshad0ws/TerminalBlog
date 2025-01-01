@@ -24,6 +24,16 @@ export const postsRelations = relations(posts, ({ one }) => ({
   }),
 }));
 
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").unique().notNull(),
+});
+
+export const postTags = pgTable("post_tags", {
+  postId: serial("post_id").references(() => posts.id),
+  tagId: serial("tag_id").references(() => tags.id),
+});
+
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const insertPostSchema = createInsertSchema(posts);
