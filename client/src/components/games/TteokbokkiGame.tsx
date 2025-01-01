@@ -10,6 +10,7 @@ interface GameObject {
   speed?: number;
   direction?: number;
   isActive?: boolean;
+  type?: string;
 }
 
 interface GameState {
@@ -19,6 +20,13 @@ interface GameState {
   score: number;
   gameOver: boolean;
 }
+
+const ENEMY_TYPES = [
+  { type: 'tteokbokki', color: '#ff4444' },
+  { type: 'ramen', color: '#ffa500' },
+  { type: 'dumpling', color: '#ffeb3b' },
+  { type: 'sushi', color: '#4caf50' }
+];
 
 export const TteokbokkiGame = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,6 +40,85 @@ export const TteokbokkiGame = () => {
     gameOver: false
   });
 
+  const drawEnemy = (ctx: CanvasRenderingContext2D, enemy: GameObject) => {
+    const enemyType = ENEMY_TYPES.find(t => t.type === enemy.type) || ENEMY_TYPES[0];
+    ctx.fillStyle = enemyType.color;
+
+    // Different shapes for different enemy types
+    switch (enemy.type) {
+      case 'ramen':
+        // Draw bowl shape
+        ctx.beginPath();
+        ctx.ellipse(
+          enemy.x + enemy.width/2,
+          enemy.y + enemy.height/2,
+          enemy.width/2,
+          enemy.height/3,
+          0,
+          0,
+          2 * Math.PI
+        );
+        ctx.fill();
+        // Draw noodles
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(enemy.x + 5 + i * 10, enemy.y + 10);
+          ctx.bezierCurveTo(
+            enemy.x + 5 + i * 10,
+            enemy.y + 20,
+            enemy.x + 15 + i * 10,
+            enemy.y + 15,
+            enemy.x + 15 + i * 10,
+            enemy.y + 25
+          );
+          ctx.stroke();
+        }
+        break;
+
+      case 'dumpling':
+        // Half-moon shape
+        ctx.beginPath();
+        ctx.arc(
+          enemy.x + enemy.width/2,
+          enemy.y + enemy.height/2,
+          enemy.width/2,
+          0.25 * Math.PI,
+          0.75 * Math.PI,
+          true
+        );
+        ctx.fill();
+        break;
+
+      case 'sushi':
+        // Roll shape
+        ctx.fillRect(enemy.x, enemy.y + enemy.height/4, enemy.width, enemy.height/2);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(
+          enemy.x,
+          enemy.y + enemy.height/3,
+          enemy.width,
+          enemy.height/6
+        );
+        break;
+
+      default: // tteokbokki
+        ctx.beginPath();
+        ctx.moveTo(enemy.x, enemy.y + enemy.height);
+        ctx.lineTo(enemy.x + enemy.width/2, enemy.y);
+        ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height);
+        ctx.closePath();
+        ctx.fill();
+
+        // Add spicy sauce glow effect
+        ctx.shadowColor = '#ff0000';
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || showMenu) return;
@@ -39,6 +126,7 @@ export const TteokbokkiGame = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    let animationFrameId: number;
     let lastTime = 0;
     const BULLET_SPEED = 7;
     const ENEMY_SPEED = 2;
@@ -67,27 +155,11 @@ export const TteokbokkiGame = () => {
         return bullet.y > 0;
       });
 
-      // Update and draw enemies (Tteokbokki vessels)
+      // Update and draw enemies
       const updatedEnemies = gameState.enemies.map(enemy => {
-        // Sine wave movement
         enemy.x += Math.sin(timestamp * 0.002) * 2;
         enemy.y += ENEMY_SPEED;
-
-        // Draw enemy vessel (Tteokbokki-styled spaceship)
-        ctx.fillStyle = '#ff4444';
-        ctx.beginPath();
-        ctx.moveTo(enemy.x, enemy.y + enemy.height);
-        ctx.lineTo(enemy.x + enemy.width/2, enemy.y);
-        ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height);
-        ctx.closePath();
-        ctx.fill();
-
-        // Add red glow effect
-        ctx.shadowColor = '#ff0000';
-        ctx.shadowBlur = 10;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
+        drawEnemy(ctx, enemy);
         return enemy;
       }).filter(enemy => enemy.y < canvas.height);
 
@@ -108,13 +180,11 @@ export const TteokbokkiGame = () => {
 
       // Collision detection
       for (const enemy of updatedEnemies) {
-        // Check for collision with player
         if (checkCollision(gameState.player, enemy)) {
           setGameState(prev => ({ ...prev, gameOver: true }));
           return;
         }
 
-        // Check for collision with bullets
         for (const bullet of updatedBullets) {
           if (checkCollision(bullet, enemy)) {
             bullet.isActive = false;
@@ -131,12 +201,14 @@ export const TteokbokkiGame = () => {
 
       // Spawn new enemies periodically
       if (timestamp % 1000 < 20 && updatedEnemies.length < 5) {
+        const randomType = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)].type;
         updatedEnemies.push({
           x: Math.random() * (canvas.width - 30),
           y: 0,
           width: 30,
           height: 30,
-          isActive: true
+          isActive: true,
+          type: randomType
         });
       }
 
@@ -146,7 +218,7 @@ export const TteokbokkiGame = () => {
         bullets: updatedBullets.filter(b => b.isActive !== false)
       }));
 
-      requestAnimationFrame(gameLoop);
+      animationFrameId = requestAnimationFrame(gameLoop);
     };
 
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -180,13 +252,16 @@ export const TteokbokkiGame = () => {
     };
 
     // Start game loop
-    requestAnimationFrame(gameLoop);
+    animationFrameId = requestAnimationFrame(gameLoop);
 
     // Add keyboard controls
     window.addEventListener('keydown', handleKeyPress);
 
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, [gameState, showMenu]);
 
