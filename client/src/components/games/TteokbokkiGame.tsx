@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { TteokbokkiGameMenu } from './TteokbokkiGameMenu';
+import { Toast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface GameObject {
   x: number;
@@ -13,12 +15,25 @@ interface GameObject {
   type?: string;
 }
 
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  requirement: number;
+  type: 'score' | 'enemies' | 'survival';
+  unlocked: boolean;
+  icon: string;
+}
+
 interface GameState {
   player: GameObject;
   enemies: GameObject[];
   bullets: GameObject[];
   score: number;
   gameOver: boolean;
+  enemiesDefeated: number;
+  survivalTime: number;
+  achievements: Achievement[];
 }
 
 const ENEMY_TYPES = [
@@ -28,6 +43,54 @@ const ENEMY_TYPES = [
   { type: 'sushi', color: '#4caf50' }
 ];
 
+const INITIAL_ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'score_1000',
+    name: 'Spicy Novice',
+    description: 'Score 1,000 points',
+    requirement: 1000,
+    type: 'score',
+    unlocked: false,
+    icon: '🌶️'
+  },
+  {
+    id: 'score_5000',
+    name: 'Tteokbokki Master',
+    description: 'Score 5,000 points',
+    requirement: 5000,
+    type: 'score',
+    unlocked: false,
+    icon: '🏆'
+  },
+  {
+    id: 'enemies_10',
+    name: 'Food Fighter',
+    description: 'Defeat 10 enemies',
+    requirement: 10,
+    type: 'enemies',
+    unlocked: false,
+    icon: '⚔️'
+  },
+  {
+    id: 'enemies_50',
+    name: 'Kitchen Commander',
+    description: 'Defeat 50 enemies',
+    requirement: 50,
+    type: 'enemies',
+    unlocked: false,
+    icon: '👑'
+  },
+  {
+    id: 'survival_60',
+    name: 'Minute Master',
+    description: 'Survive for 60 seconds',
+    requirement: 60,
+    type: 'survival',
+    unlocked: false,
+    icon: '⏱️'
+  }
+];
+
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 400;
 
@@ -35,13 +98,50 @@ export const TteokbokkiGame = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [highScore, setHighScore] = useState<number>(0);
   const [showMenu, setShowMenu] = useState<boolean>(true);
+  const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>({
     player: { x: CANVAS_WIDTH / 2 - 15, y: CANVAS_HEIGHT - 50, width: 30, height: 30 },
     enemies: [],
     bullets: [],
     score: 0,
-    gameOver: false
+    gameOver: false,
+    enemiesDefeated: 0,
+    survivalTime: 0,
+    achievements: INITIAL_ACHIEVEMENTS
   });
+
+  const checkAchievements = () => {
+    const updatedAchievements = gameState.achievements.map(achievement => {
+      if (achievement.unlocked) return achievement;
+
+      let requirementMet = false;
+      switch (achievement.type) {
+        case 'score':
+          requirementMet = gameState.score >= achievement.requirement;
+          break;
+        case 'enemies':
+          requirementMet = gameState.enemiesDefeated >= achievement.requirement;
+          break;
+        case 'survival':
+          requirementMet = gameState.survivalTime >= achievement.requirement;
+          break;
+      }
+
+      if (requirementMet && !achievement.unlocked) {
+        toast({
+          title: `Achievement Unlocked!`,
+          description: `${achievement.icon} ${achievement.name}: ${achievement.description}`,
+          duration: 3000
+        });
+        return { ...achievement, unlocked: true };
+      }
+      return achievement;
+    });
+
+    if (JSON.stringify(updatedAchievements) !== JSON.stringify(gameState.achievements)) {
+      setGameState(prev => ({ ...prev, achievements: updatedAchievements }));
+    }
+  };
 
   const drawEnemy = (ctx: CanvasRenderingContext2D, enemy: GameObject) => {
     const enemyType = ENEMY_TYPES.find(t => t.type === enemy.type) || ENEMY_TYPES[0];
@@ -150,7 +250,6 @@ export const TteokbokkiGame = () => {
     const canvas = canvasRef.current;
     if (!canvas || showMenu) return;
 
-    // Set canvas dimensions explicitly
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
@@ -159,6 +258,7 @@ export const TteokbokkiGame = () => {
 
     let animationFrameId: number | null = null;
     let lastTime = performance.now();
+    let gameStartTime = performance.now();
     const BULLET_SPEED = 7;
     const ENEMY_SPEED = 2;
 
@@ -173,6 +273,15 @@ export const TteokbokkiGame = () => {
 
       const deltaTime = timestamp - lastTime;
       lastTime = timestamp;
+
+      // Update survival time
+      const currentSurvivalTime = Math.floor((timestamp - gameStartTime) / 1000);
+      if (currentSurvivalTime !== gameState.survivalTime) {
+        setGameState(prev => ({ ...prev, survivalTime: currentSurvivalTime }));
+      }
+
+      // Check achievements
+      checkAchievements();
 
       // Clear canvas
       ctx.fillStyle = '#000000';
@@ -220,7 +329,7 @@ export const TteokbokkiGame = () => {
           if (checkCollision(bullet, enemy)) {
             bullet.isActive = false;
             enemy.isActive = false;
-            setGameState(prev => ({ ...prev, score: prev.score + 100 }));
+            setGameState(prev => ({ ...prev, score: prev.score + 100, enemiesDefeated: prev.enemiesDefeated + 1 }));
           }
         }
       }
@@ -230,6 +339,16 @@ export const TteokbokkiGame = () => {
       ctx.font = 'bold 24px "Courier New"';
       ctx.textAlign = 'left';
       ctx.fillText(`SCORE: ${gameState.score}`, 10, 30);
+      ctx.font = 'bold 16px "Courier New"';
+      ctx.fillText(`Time: ${currentSurvivalTime}s`, 10, 55);
+      ctx.fillText(`Enemies: ${gameState.enemiesDefeated}`, 10, 80);
+
+      // Draw active achievements
+      const unlockedAchievements = gameState.achievements.filter(a => a.unlocked);
+      unlockedAchievements.forEach((achievement, index) => {
+        ctx.fillText(`${achievement.icon}`, CANVAS_WIDTH - 30 - (index * 30), 30);
+      });
+
 
       // Spawn new enemies
       if (timestamp % 1000 < 20 && updatedEnemies.length < 5) {
@@ -257,7 +376,7 @@ export const TteokbokkiGame = () => {
       if (gameState.gameOver) return;
 
       const newPlayer = { ...gameState.player };
-      const speed = 12.5; // Increased from 5 to 12.5 (250% increase)
+      const speed = 12.5; 
 
       switch (e.key) {
         case 'ArrowLeft':
@@ -307,7 +426,10 @@ export const TteokbokkiGame = () => {
       enemies: [],
       bullets: [],
       score: 0,
-      gameOver: false
+      gameOver: false,
+      enemiesDefeated: 0,
+      survivalTime: 0,
+      achievements: INITIAL_ACHIEVEMENTS
     });
     setShowMenu(false);
   };

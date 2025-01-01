@@ -8,17 +8,30 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
+
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  requirement: number;
+  type: 'score' | 'enemies' | 'survival';
+  unlocked: boolean;
+  icon: string;
+}
 
 interface GameMenuProps {
   onStartGame: () => void;
   onResetGame: () => void;
   highScore: number;
+  achievements?: Achievement[];
 }
 
 export const TteokbokkiGameMenu = ({
   onStartGame,
   onResetGame,
   highScore,
+  achievements = []
 }: GameMenuProps) => {
   return (
     <Card className="p-6 max-w-xl mx-auto bg-black border-[rgb(40,254,20)] text-[rgb(40,254,20)]">
@@ -30,6 +43,32 @@ export const TteokbokkiGameMenu = ({
         <div className="text-center font-mono">
           <p className="text-xl font-semibold">HIGH SCORE: {highScore}</p>
         </div>
+
+        {achievements.length > 0 && (
+          <div className="mb-4 p-4 border border-[rgb(40,254,20)] rounded-lg">
+            <h3 className="text-lg font-mono mb-2">Achievements</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {achievements.map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className={`p-2 border rounded ${
+                    achievement.unlocked
+                      ? 'border-[rgb(40,254,20)] bg-[rgb(40,254,20)]/10'
+                      : 'border-[rgb(40,254,20)]/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{achievement.icon}</span>
+                    <div>
+                      <p className="font-mono text-sm">{achievement.name}</p>
+                      <p className="text-xs opacity-70">{achievement.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3">
           <Button
@@ -79,11 +118,11 @@ export const TteokbokkiGameMenu = ({
                   </section>
 
                   <section>
-                    <h3 className="font-bold mb-2">TACTICAL ADVICE</h3>
+                    <h3 className="font-bold mb-2">ACHIEVEMENTS</h3>
                     <ul className="list-disc pl-4 space-y-2">
-                      <li>Enemy vessels move in wave patterns</li>
-                      <li>Watch for their red engine glow</li>
-                      <li>Time your shots carefully</li>
+                      <li>Unlock special badges by reaching score milestones</li>
+                      <li>Defeat enemies to earn combat achievements</li>
+                      <li>Survive longer to prove your endurance</li>
                     </ul>
                   </section>
                 </div>
