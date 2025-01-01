@@ -113,6 +113,7 @@ export const TteokbokkiGame = () => {
     achievements: INITIAL_ACHIEVEMENTS
   });
   const [showNameInput, setShowNameInput] = useState(false);
+  const [location, setLocation] = useState('/'); // Assuming setLocation is available
 
   const submitScore = useMutation({
     mutationFn: async ({ name, score }: { name: string; score: number }) => {
@@ -388,7 +389,7 @@ export const TteokbokkiGame = () => {
         case 'ArrowRight':
           newPlayer.x = Math.min(canvas.width - newPlayer.width, newPlayer.x + speed);
           break;
-        case ' ': 
+        case ' ':
           audioManager.playSound('shoot');
           setGameState(prev => ({
             ...prev,
@@ -443,6 +444,7 @@ export const TteokbokkiGame = () => {
     audioManager.stopBGM();
     setGameState(prev => ({ ...prev, gameOver: true }));
     setShowMenu(true);
+    setLocation('/'); // Navigate back to home page
   };
 
   const handleNameSubmit = (name: string) => {
@@ -454,13 +456,15 @@ export const TteokbokkiGame = () => {
             title: "Score submitted!",
             description: "Your score has been added to the leaderboard.",
           });
+          setLocation('/'); // Navigate to home after successful submission
         },
-        onError: () => {
+        onError: (error) => {
           toast({
             title: "Error",
             description: "Failed to submit score. Please try again.",
             variant: "destructive",
           });
+          console.error('Score submission error:', error);
         },
       }
     );

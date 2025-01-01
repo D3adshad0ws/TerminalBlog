@@ -178,6 +178,8 @@ export const KartRiderGame = () => {
   const resetGame = () => {
     setGameState(prev => ({ ...prev, gameOver: true }));
     setShowMenu(true);
+    // Navigate back to home page.  This requires a routing solution (e.g., React Router) to be in place.
+    //  The specific implementation is outside the scope of this code edit.
   };
 
   return (

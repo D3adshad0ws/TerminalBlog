@@ -12,15 +12,24 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/scores", async (req, res) => {
     const { name, score } = req.body;
     if (!name || !score) {
-      return res.status(400).send("Name and score are required");
+      return res.status(400).json({ error: "Name and score are required" });
     }
 
     try {
+      // Validate input
+      if (typeof score !== 'number' || score < 0) {
+        return res.status(400).json({ error: "Invalid score value" });
+      }
+
+      if (typeof name !== 'string' || name.length < 1 || name.length > 20) {
+        return res.status(400).json({ error: "Name must be between 1 and 20 characters" });
+      }
+
       const [entry] = await db.insert(gameHistory)
         .values({
           userId: 1, // Default user for anonymous scores
           score,
-          enemiesDefeated: 0, // These will be added later when we track more stats
+          enemiesDefeated: 0,
           survivalTime: 0,
           achievementsUnlocked: [],
         })
