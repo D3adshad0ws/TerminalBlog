@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card } from "@/components/ui/card";
 import { TteokbokkiGameMenu } from './TteokbokkiGameMenu';
 import { Toast } from "@/components/ui/toast";
@@ -101,6 +102,7 @@ export const TteokbokkiGame = () => {
   const [highScore, setHighScore] = useState<number>(0);
   const [showMenu, setShowMenu] = useState<boolean>(true);
   const { toast } = useToast();
+  const [_, setLocation] = useLocation();
   const [gameState, setGameState] = useState<GameState>({
     player: { x: CANVAS_WIDTH / 2 - 15, y: CANVAS_HEIGHT - 50, width: 30, height: 30 },
     enemies: [],
@@ -111,7 +113,6 @@ export const TteokbokkiGame = () => {
     survivalTime: 0,
     achievements: INITIAL_ACHIEVEMENTS
   });
-  const [location, setLocation] = useState('/');
 
   const submitScore = useMutation({
     mutationFn: async ({ score }: { score: number }) => {
@@ -462,7 +463,6 @@ export const TteokbokkiGame = () => {
     setShowMenu(true);
     setLocation('/');
   };
-
 
   return (
     <div className="min-h-screen bg-black p-4 flex items-center justify-center">
