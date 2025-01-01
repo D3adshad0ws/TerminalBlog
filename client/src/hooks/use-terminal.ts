@@ -35,6 +35,15 @@ export function useTerminal() {
     staleTime: 5000,
   });
 
+  const resetTerminal = () => {
+    setHistory([]);
+    setGameState({
+      isPlaying: false,
+      game: null,
+      data: null,
+    });
+  };
+
   const processCommand = (input: string) => {
     const newCommand: Command = {
       command: input,
@@ -232,5 +241,6 @@ GitHub: https://github.com/D3adshad0ws`;
   return {
     history,
     processCommand,
+    resetTerminal,
   };
 }

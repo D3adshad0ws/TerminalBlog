@@ -2,12 +2,15 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Post } from "@db/schema";
+import { useTerminal } from "@/hooks/use-terminal";
 
 export function Navigation() {
   const [_, setLocation] = useLocation();
+  const { resetTerminal } = useTerminal();
 
   const handleReset = () => {
-    setLocation('/');
+    resetTerminal(); // Reset terminal state first
+    setLocation('/'); // Then navigate home
   };
 
   // We still fetch posts to maintain data consistency,
