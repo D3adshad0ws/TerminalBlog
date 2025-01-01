@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 
 interface Command {
   command: string;
@@ -27,6 +28,7 @@ export function useTerminal() {
     game: null,
     data: null,
   });
+  const [_, setLocation] = useLocation();
 
   const { data: posts } = useQuery<Post[]>({
     queryKey: ['/api/posts'],
@@ -182,17 +184,25 @@ Available commands:
 Easter Eggs:
 - guess: Play a number guessing game
 - hangman: Play hangman with cybersecurity terms
+- tteokbokki: Launch Tteokbokki Space Battle
+- kart: Launch Cyber Kart Rider
 `;
       case 'clear':
         setHistory([]);
         return '';
+      case 'tteokbokki':
+        setLocation('/easter-egg/tteokbokki');
+        return 'Launching Tteokbokki Space Battle...';
+      case 'kart':
+        setLocation('/easter-egg/kart-rider');
+        return 'Launching Cyber Kart Rider...';
       case 'about':
         return 'Welcome to my terminal-themed blog! This is a cybersecurity focused blog discussing various aspects of information security, state-sponsored attacks, and defense strategies.';
       case 'blog':
         if (!posts || posts.length === 0) {
           return 'No blog posts available.';
         }
-        return posts.map((post, index) => 
+        return posts.map((post, index) =>
           `<${index + 1}> ${post.title} (${new Date(post.createdAt).toLocaleDateString()})`
         ).join('\n');
       case 'read':
