@@ -2,11 +2,55 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { db } from "@db";
-import { posts, tags, postTags } from "@db/schema";
-import { eq, ilike, inArray } from "drizzle-orm";
+import { posts, tags, postTags, gameHistory } from "@db/schema";
+import { eq, ilike, inArray, desc } from "drizzle-orm";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
+
+  // Game score endpoints
+  app.post("/api/scores", async (req, res) => {
+    const { name, score } = req.body;
+    if (!name || !score) {
+      return res.status(400).send("Name and score are required");
+    }
+
+    try {
+      const [entry] = await db.insert(gameHistory)
+        .values({
+          userId: 1, // Default user for anonymous scores
+          score,
+          enemiesDefeated: 0, // These will be added later when we track more stats
+          survivalTime: 0,
+          achievementsUnlocked: [],
+        })
+        .returning();
+
+      res.json(entry);
+    } catch (error) {
+      console.error('Failed to save score:', error);
+      res.status(500).json({ error: "Failed to save score" });
+    }
+  });
+
+  app.get("/api/scores", async (_req, res) => {
+    try {
+      const scores = await db
+        .select({
+          id: gameHistory.id,
+          score: gameHistory.score,
+          playedAt: gameHistory.playedAt,
+        })
+        .from(gameHistory)
+        .orderBy(desc(gameHistory.score))
+        .limit(10);
+
+      res.json(scores);
+    } catch (error) {
+      console.error('Failed to fetch scores:', error);
+      res.status(500).json({ error: "Failed to fetch scores" });
+    }
+  });
 
   // Get all tags
   app.get("/api/tags", async (_req, res) => {
@@ -81,7 +125,6 @@ export function registerRoutes(app: Express): Server {
       .where(eq(posts.isPublic, true))
       .orderBy(posts.createdAt);
 
-    // Group posts by ID and combine tags
     const groupedPosts = postsWithTags.reduce((acc, curr) => {
       const { tags: tag, ...post } = curr;
       if (!acc[post.id]) {
@@ -104,7 +147,6 @@ export function registerRoutes(app: Express): Server {
 
     const { title, content, isPublic = true, tagNames = [] } = req.body;
 
-    // Start a transaction
     try {
       const [newPost] = await db
         .insert(posts)
@@ -116,9 +158,7 @@ export function registerRoutes(app: Express): Server {
         })
         .returning();
 
-      // Handle tags
       if (tagNames.length > 0) {
-        // Get or create tags
         const existingTags = await db
           .select()
           .from(tags)
@@ -136,7 +176,6 @@ export function registerRoutes(app: Express): Server {
           allTags = [...existingTags, ...newTags];
         }
 
-        // Create post-tag relationships
         await db
           .insert(postTags)
           .values(allTags.map(tag => ({
@@ -144,7 +183,6 @@ export function registerRoutes(app: Express): Server {
             tagId: tag.id,
           })));
 
-        // Return post with tags
         const postWithTags = {
           ...newPost,
           tags: allTags.map(t => t.name),

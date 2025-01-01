@@ -4,6 +4,8 @@ import { TteokbokkiGameMenu } from './TteokbokkiGameMenu';
 import { Toast } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { audioManager } from '@/lib/audio';
+import { NameInputDialog } from './NameInputDialog';
+import { useMutation } from '@tanstack/react-query';
 
 interface GameObject {
   x: number;
@@ -110,6 +112,23 @@ export const TteokbokkiGame = () => {
     survivalTime: 0,
     achievements: INITIAL_ACHIEVEMENTS
   });
+  const [showNameInput, setShowNameInput] = useState(false);
+
+  const submitScore = useMutation({
+    mutationFn: async ({ name, score }: { name: string; score: number }) => {
+      const res = await fetch('/api/scores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, score }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to submit score');
+      }
+      return res.json();
+    },
+  });
 
   const checkAchievements = () => {
     const updatedAchievements = gameState.achievements.map(achievement => {
@@ -150,7 +169,6 @@ export const TteokbokkiGame = () => {
 
     switch (enemy.type) {
       case 'tteokbokki':
-        // Draw rice cake cylinder
         ctx.beginPath();
         ctx.roundRect(
           enemy.x + 5,
@@ -161,7 +179,6 @@ export const TteokbokkiGame = () => {
         );
         ctx.fill();
 
-        // Add texture lines to make it look like rice cake
         ctx.strokeStyle = '#ff6666';
         ctx.lineWidth = 2;
         for (let i = 1; i <= 3; i++) {
@@ -171,7 +188,6 @@ export const TteokbokkiGame = () => {
           ctx.stroke();
         }
 
-        // Add sauce dripping effect
         ctx.strokeStyle = '#ff0000';
         ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
@@ -181,7 +197,6 @@ export const TteokbokkiGame = () => {
           ctx.stroke();
         }
 
-        // Add spicy sauce glow effect
         ctx.shadowColor = '#ff0000';
         ctx.shadowBlur = 10;
         ctx.fill();
@@ -189,7 +204,6 @@ export const TteokbokkiGame = () => {
         break;
 
       case 'ramen':
-        // Draw bowl shape
         ctx.beginPath();
         ctx.ellipse(
           enemy.x + enemy.width/2,
@@ -201,7 +215,6 @@ export const TteokbokkiGame = () => {
           2 * Math.PI
         );
         ctx.fill();
-        // Draw noodles
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
@@ -220,7 +233,6 @@ export const TteokbokkiGame = () => {
         break;
 
       case 'dumpling':
-        // Half-moon shape
         ctx.beginPath();
         ctx.arc(
           enemy.x + enemy.width/2,
@@ -234,7 +246,6 @@ export const TteokbokkiGame = () => {
         break;
 
       case 'sushi':
-        // Roll shape
         ctx.fillRect(enemy.x, enemy.y + enemy.height/4, enemy.width, enemy.height/2);
         ctx.fillStyle = '#000';
         ctx.fillRect(
@@ -267,6 +278,7 @@ export const TteokbokkiGame = () => {
       if (gameState.gameOver) {
         if (gameState.score > highScore) {
           setHighScore(gameState.score);
+          setShowNameInput(true);
         }
         setShowMenu(true);
         return;
@@ -275,20 +287,16 @@ export const TteokbokkiGame = () => {
       const deltaTime = timestamp - lastTime;
       lastTime = timestamp;
 
-      // Update survival time
       const currentSurvivalTime = Math.floor((timestamp - gameStartTime) / 1000);
       if (currentSurvivalTime !== gameState.survivalTime) {
         setGameState(prev => ({ ...prev, survivalTime: currentSurvivalTime }));
       }
 
-      // Check achievements
       checkAchievements();
 
-      // Clear canvas
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Update and draw bullets
       const updatedBullets = gameState.bullets.filter(bullet => {
         bullet.y -= BULLET_SPEED;
         ctx.fillStyle = '#00ff00';
@@ -296,7 +304,6 @@ export const TteokbokkiGame = () => {
         return bullet.y > 0;
       });
 
-      // Update and draw enemies
       const updatedEnemies = gameState.enemies.map(enemy => {
         enemy.x += Math.sin(timestamp * 0.002) * 2;
         enemy.y += ENEMY_SPEED;
@@ -304,7 +311,6 @@ export const TteokbokkiGame = () => {
         return enemy;
       }).filter(enemy => enemy.y < canvas.height);
 
-      // Draw player spaceship
       ctx.fillStyle = '#4444ff';
       ctx.beginPath();
       ctx.moveTo(gameState.player.x + gameState.player.width/2, gameState.player.y);
@@ -313,13 +319,11 @@ export const TteokbokkiGame = () => {
       ctx.closePath();
       ctx.fill();
 
-      // Add blue engine glow
       ctx.shadowColor = '#0000ff';
       ctx.shadowBlur = 15;
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Collision detection
       for (const enemy of updatedEnemies) {
         if (checkCollision(gameState.player, enemy)) {
           setGameState(prev => ({ ...prev, gameOver: true }));
@@ -336,7 +340,6 @@ export const TteokbokkiGame = () => {
         }
       }
 
-      // Draw score with enhanced visibility
       ctx.fillStyle = '#00ff00';
       ctx.font = 'bold 24px "Courier New"';
       ctx.textAlign = 'left';
@@ -345,14 +348,12 @@ export const TteokbokkiGame = () => {
       ctx.fillText(`Time: ${currentSurvivalTime}s`, 10, 55);
       ctx.fillText(`Enemies: ${gameState.enemiesDefeated}`, 10, 80);
 
-      // Draw active achievements
       const unlockedAchievements = gameState.achievements.filter(a => a.unlocked);
       unlockedAchievements.forEach((achievement, index) => {
         ctx.fillText(`${achievement.icon}`, CANVAS_WIDTH - 30 - (index * 30), 30);
       });
 
 
-      // Spawn new enemies
       if (timestamp % 1000 < 20 && updatedEnemies.length < 5) {
         const randomType = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)].type;
         updatedEnemies.push({
@@ -387,7 +388,7 @@ export const TteokbokkiGame = () => {
         case 'ArrowRight':
           newPlayer.x = Math.min(canvas.width - newPlayer.width, newPlayer.x + speed);
           break;
-        case ' ': // Spacebar
+        case ' ': 
           audioManager.playSound('shoot');
           setGameState(prev => ({
             ...prev,
@@ -444,6 +445,27 @@ export const TteokbokkiGame = () => {
     setShowMenu(true);
   };
 
+  const handleNameSubmit = (name: string) => {
+    submitScore.mutate(
+      { name, score: gameState.score },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Score submitted!",
+            description: "Your score has been added to the leaderboard.",
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to submit score. Please try again.",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
   return (
     <div className="min-h-screen bg-black p-4 flex items-center justify-center">
       {showMenu ? (
@@ -451,6 +473,7 @@ export const TteokbokkiGame = () => {
           onStartGame={startGame}
           onResetGame={resetGame}
           highScore={highScore}
+          achievements={gameState.achievements}
         />
       ) : (
         <Card className="p-4 bg-black border-[rgb(40,254,20)]">
@@ -460,6 +483,12 @@ export const TteokbokkiGame = () => {
           />
         </Card>
       )}
+      <NameInputDialog
+        isOpen={showNameInput}
+        onClose={() => setShowNameInput(false)}
+        onSubmit={handleNameSubmit}
+        score={gameState.score}
+      />
     </div>
   );
 };
