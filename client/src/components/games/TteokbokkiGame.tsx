@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { TteokbokkiGameMenu } from './TteokbokkiGameMenu';
 import { Toast } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
+import { audioManager } from '@/lib/audio';
 
 interface GameObject {
   x: number;
@@ -327,6 +328,7 @@ export const TteokbokkiGame = () => {
 
         for (const bullet of updatedBullets) {
           if (checkCollision(bullet, enemy)) {
+            audioManager.playSound('explosion');
             bullet.isActive = false;
             enemy.isActive = false;
             setGameState(prev => ({ ...prev, score: prev.score + 100, enemiesDefeated: prev.enemiesDefeated + 1 }));
@@ -376,7 +378,7 @@ export const TteokbokkiGame = () => {
       if (gameState.gameOver) return;
 
       const newPlayer = { ...gameState.player };
-      const speed = 12.5; 
+      const speed = 12.5;
 
       switch (e.key) {
         case 'ArrowLeft':
@@ -386,6 +388,7 @@ export const TteokbokkiGame = () => {
           newPlayer.x = Math.min(canvas.width - newPlayer.width, newPlayer.x + speed);
           break;
         case ' ': // Spacebar
+          audioManager.playSound('shoot');
           setGameState(prev => ({
             ...prev,
             bullets: [...prev.bullets, {
@@ -421,6 +424,7 @@ export const TteokbokkiGame = () => {
   };
 
   const startGame = () => {
+    audioManager.playBGM();
     setGameState({
       player: { x: CANVAS_WIDTH / 2 - 15, y: CANVAS_HEIGHT - 50, width: 30, height: 30 },
       enemies: [],
@@ -435,6 +439,7 @@ export const TteokbokkiGame = () => {
   };
 
   const resetGame = () => {
+    audioManager.stopBGM();
     setGameState(prev => ({ ...prev, gameOver: true }));
     setShowMenu(true);
   };
