@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { db } from "@db";
-import { posts, tags, postTags, gameHistory } from "@db/schema";
+import { posts, tags, postTags, gameHistory, users } from "@db/schema";
 import { eq, ilike, inArray, desc } from "drizzle-orm";
 
 export function registerRoutes(app: Express): Server {
@@ -10,24 +10,18 @@ export function registerRoutes(app: Express): Server {
 
   // Game score endpoints
   app.post("/api/scores", async (req, res) => {
-    const { name, score } = req.body;
-    if (!name || !score) {
-      return res.status(400).json({ error: "Name and score are required" });
+    const { score } = req.body;
+    if (typeof score !== 'number' || score < 0) {
+      return res.status(400).json({ error: "Invalid score value" });
     }
 
     try {
-      // Validate input
-      if (typeof score !== 'number' || score < 0) {
-        return res.status(400).json({ error: "Invalid score value" });
-      }
-
-      if (typeof name !== 'string' || name.length < 1 || name.length > 20) {
-        return res.status(400).json({ error: "Name must be between 1 and 20 characters" });
-      }
+      // Use authenticated user's ID if available, otherwise use IP address
+      const userId = req.user?.id || 1; // Default to user ID 1 for anonymous users
 
       const [entry] = await db.insert(gameHistory)
         .values({
-          userId: 1, // Default user for anonymous scores
+          userId,
           score,
           enemiesDefeated: 0,
           survivalTime: 0,
@@ -49,8 +43,10 @@ export function registerRoutes(app: Express): Server {
           id: gameHistory.id,
           score: gameHistory.score,
           playedAt: gameHistory.playedAt,
+          username: users.username,
         })
         .from(gameHistory)
+        .leftJoin(users, eq(gameHistory.userId, users.id))
         .orderBy(desc(gameHistory.score))
         .limit(10);
 

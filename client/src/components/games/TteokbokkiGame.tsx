@@ -4,7 +4,6 @@ import { TteokbokkiGameMenu } from './TteokbokkiGameMenu';
 import { Toast } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { audioManager } from '@/lib/audio';
-import { NameInputDialog } from './NameInputDialog';
 import { useMutation } from '@tanstack/react-query';
 
 interface GameObject {
@@ -112,17 +111,16 @@ export const TteokbokkiGame = () => {
     survivalTime: 0,
     achievements: INITIAL_ACHIEVEMENTS
   });
-  const [showNameInput, setShowNameInput] = useState(false);
-  const [location, setLocation] = useState('/'); // Assuming setLocation is available
+  const [location, setLocation] = useState('/');
 
   const submitScore = useMutation({
-    mutationFn: async ({ name, score }: { name: string; score: number }) => {
+    mutationFn: async ({ score }: { score: number }) => {
       const res = await fetch('/api/scores', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, score }),
+        body: JSON.stringify({ score }),
       });
       if (!res.ok) {
         throw new Error('Failed to submit score');
@@ -279,7 +277,25 @@ export const TteokbokkiGame = () => {
       if (gameState.gameOver) {
         if (gameState.score > highScore) {
           setHighScore(gameState.score);
-          setShowNameInput(true);
+          submitScore.mutate(
+            { score: gameState.score },
+            {
+              onSuccess: () => {
+                toast({
+                  title: "Score submitted!",
+                  description: "Your score has been added to the leaderboard.",
+                });
+              },
+              onError: (error) => {
+                toast({
+                  title: "Error",
+                  description: "Failed to submit score. Please try again.",
+                  variant: "destructive",
+                });
+                console.error('Score submission error:', error);
+              },
+            }
+          );
         }
         setShowMenu(true);
         return;
@@ -444,31 +460,9 @@ export const TteokbokkiGame = () => {
     audioManager.stopBGM();
     setGameState(prev => ({ ...prev, gameOver: true }));
     setShowMenu(true);
-    setLocation('/'); // Navigate back to home page
+    setLocation('/');
   };
 
-  const handleNameSubmit = (name: string) => {
-    submitScore.mutate(
-      { name, score: gameState.score },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Score submitted!",
-            description: "Your score has been added to the leaderboard.",
-          });
-          setLocation('/'); // Navigate to home after successful submission
-        },
-        onError: (error) => {
-          toast({
-            title: "Error",
-            description: "Failed to submit score. Please try again.",
-            variant: "destructive",
-          });
-          console.error('Score submission error:', error);
-        },
-      }
-    );
-  };
 
   return (
     <div className="min-h-screen bg-black p-4 flex items-center justify-center">
@@ -487,12 +481,6 @@ export const TteokbokkiGame = () => {
           />
         </Card>
       )}
-      <NameInputDialog
-        isOpen={showNameInput}
-        onClose={() => setShowNameInput(false)}
-        onSubmit={handleNameSubmit}
-        score={gameState.score}
-      />
     </div>
   );
 };
