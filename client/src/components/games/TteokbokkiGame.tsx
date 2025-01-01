@@ -28,12 +28,15 @@ const ENEMY_TYPES = [
   { type: 'sushi', color: '#4caf50' }
 ];
 
+const CANVAS_WIDTH = 400;
+const CANVAS_HEIGHT = 400;
+
 export const TteokbokkiGame = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [highScore, setHighScore] = useState<number>(0);
   const [showMenu, setShowMenu] = useState<boolean>(true);
   const [gameState, setGameState] = useState<GameState>({
-    player: { x: 200, y: 350, width: 30, height: 30 },
+    player: { x: CANVAS_WIDTH / 2 - 15, y: CANVAS_HEIGHT - 50, width: 30, height: 30 },
     enemies: [],
     bullets: [],
     score: 0,
@@ -44,7 +47,6 @@ export const TteokbokkiGame = () => {
     const enemyType = ENEMY_TYPES.find(t => t.type === enemy.type) || ENEMY_TYPES[0];
     ctx.fillStyle = enemyType.color;
 
-    // Different shapes for different enemy types
     switch (enemy.type) {
       case 'ramen':
         // Draw bowl shape
@@ -123,20 +125,24 @@ export const TteokbokkiGame = () => {
     const canvas = canvasRef.current;
     if (!canvas || showMenu) return;
 
+    // Set canvas dimensions explicitly
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animationFrameId: number;
-    let lastTime = 0;
+    let animationFrameId: number | null = null;
+    let lastTime = performance.now();
     const BULLET_SPEED = 7;
     const ENEMY_SPEED = 2;
 
     const gameLoop = (timestamp: number) => {
       if (gameState.gameOver) {
-        setShowMenu(true);
         if (gameState.score > highScore) {
           setHighScore(gameState.score);
         }
+        setShowMenu(true);
         return;
       }
 
@@ -194,12 +200,12 @@ export const TteokbokkiGame = () => {
         }
       }
 
-      // Draw score with retro style
+      // Draw score
       ctx.fillStyle = '#00ff00';
       ctx.font = '20px "Courier New"';
       ctx.fillText(`SCORE: ${gameState.score}`, 10, 30);
 
-      // Spawn new enemies periodically
+      // Spawn new enemies
       if (timestamp % 1000 < 20 && updatedEnemies.length < 5) {
         const randomType = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)].type;
         updatedEnemies.push({
@@ -251,11 +257,8 @@ export const TteokbokkiGame = () => {
       setGameState(prev => ({ ...prev, player: newPlayer }));
     };
 
-    // Start game loop
-    animationFrameId = requestAnimationFrame(gameLoop);
-
-    // Add keyboard controls
     window.addEventListener('keydown', handleKeyPress);
+    animationFrameId = requestAnimationFrame(gameLoop);
 
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
@@ -263,7 +266,7 @@ export const TteokbokkiGame = () => {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [gameState, showMenu]);
+  }, [gameState, showMenu, highScore]);
 
   const checkCollision = (obj1: GameObject, obj2: GameObject) => {
     return obj1.x < obj2.x + obj2.width &&
@@ -273,11 +276,8 @@ export const TteokbokkiGame = () => {
   };
 
   const startGame = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
     setGameState({
-      player: { x: canvas.width/2 - 15, y: 350, width: 30, height: 30 },
+      player: { x: CANVAS_WIDTH / 2 - 15, y: CANVAS_HEIGHT - 50, width: 30, height: 30 },
       enemies: [],
       bullets: [],
       score: 0,
@@ -303,8 +303,6 @@ export const TteokbokkiGame = () => {
         <Card className="p-4 bg-black border-[rgb(40,254,20)]">
           <canvas
             ref={canvasRef}
-            width={400}
-            height={400}
             className="border-2 border-[rgb(40,254,20)] rounded-lg bg-black"
           />
         </Card>
