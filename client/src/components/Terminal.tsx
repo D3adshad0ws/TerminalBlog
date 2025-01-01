@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'wouter';
 import { TerminalInput } from './TerminalInput';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -8,11 +9,34 @@ interface TerminalProps {
 }
 
 export function Terminal({ history, onCommand }: TerminalProps) {
+  const [_, setLocation] = useLocation();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
+
+  const handleCommand = (command: string) => {
+    switch (command.toLowerCase()) {
+      case 'help':
+        onCommand(command);
+        return `Available commands:
+- help: Show this help message
+- clear: Clear the terminal
+- tteokbokki: Launch Tteokbokki Space Battle
+- kart: Launch Cyber Kart Rider
+- exit: Exit current game (if in a game)`;
+      case 'tteokbokki':
+        setLocation('/easter-egg/tteokbokki');
+        return 'Launching Tteokbokki Space Battle...';
+      case 'kart':
+        setLocation('/easter-egg/kart-rider');
+        return 'Launching Cyber Kart Rider...';
+      default:
+        onCommand(command);
+        return 'Unknown command. Type "help" for available commands.';
+    }
+  };
 
   return (
     <div className="w-full h-full bg-black text-[rgb(40,254,20)] font-mono p-4 rounded-none border border-[rgb(40,254,20)]">
@@ -21,7 +45,7 @@ export function Terminal({ history, onCommand }: TerminalProps) {
           <div className="mb-4">
             Welcome to the Terminal Blog! Type 'help' for available commands.
           </div>
-          
+
           {history.map((entry, i) => (
             <div key={i} className="space-y-1">
               <div className="flex items-center">
@@ -31,13 +55,17 @@ export function Terminal({ history, onCommand }: TerminalProps) {
               <div className="whitespace-pre-wrap">{entry.output}</div>
             </div>
           ))}
-          
+
           <div ref={bottomRef} />
         </div>
       </ScrollArea>
-      
+
       <div className="mt-4">
-        <TerminalInput onSubmit={onCommand} />
+        <TerminalInput onSubmit={(cmd) => {
+          const output = handleCommand(cmd);
+          onCommand(cmd);
+          return output;
+        }} />
       </div>
     </div>
   );
