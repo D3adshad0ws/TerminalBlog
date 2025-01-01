@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card } from "@/components/ui/card";
 import { KartRiderMenu } from './KartRiderMenu';
 
@@ -22,6 +23,7 @@ export const KartRiderGame = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [highScore, setHighScore] = useState<number>(0);
   const [showMenu, setShowMenu] = useState<boolean>(true);
+  const [_, setLocation] = useLocation();
   const [gameState, setGameState] = useState<GameState>({
     player: { x: 200, y: 300, width: 40, height: 60, speed: 5, lane: 1 },
     obstacles: [],
@@ -178,8 +180,7 @@ export const KartRiderGame = () => {
   const resetGame = () => {
     setGameState(prev => ({ ...prev, gameOver: true }));
     setShowMenu(true);
-    // Navigate back to home page.  This requires a routing solution (e.g., React Router) to be in place.
-    //  The specific implementation is outside the scope of this code edit.
+    setLocation('/'); // Navigate back to terminal view
   };
 
   return (
