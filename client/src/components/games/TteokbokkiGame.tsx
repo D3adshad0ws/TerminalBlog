@@ -48,6 +48,45 @@ export const TteokbokkiGame = () => {
     ctx.fillStyle = enemyType.color;
 
     switch (enemy.type) {
+      case 'tteokbokki':
+        // Draw rice cake cylinder
+        ctx.beginPath();
+        ctx.roundRect(
+          enemy.x + 5,
+          enemy.y,
+          enemy.width - 10,
+          enemy.height,
+          8
+        );
+        ctx.fill();
+
+        // Add texture lines to make it look like rice cake
+        ctx.strokeStyle = '#ff6666';
+        ctx.lineWidth = 2;
+        for (let i = 1; i <= 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(enemy.x + 5, enemy.y + (enemy.height * i / 4));
+          ctx.lineTo(enemy.x + enemy.width - 5, enemy.y + (enemy.height * i / 4));
+          ctx.stroke();
+        }
+
+        // Add sauce dripping effect
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(enemy.x + 10 + (i * 10), enemy.y);
+          ctx.lineTo(enemy.x + 15 + (i * 10), enemy.y + 10);
+          ctx.stroke();
+        }
+
+        // Add spicy sauce glow effect
+        ctx.shadowColor = '#ff0000';
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        break;
+
       case 'ramen':
         // Draw bowl shape
         ctx.beginPath();
@@ -104,20 +143,6 @@ export const TteokbokkiGame = () => {
           enemy.height/6
         );
         break;
-
-      default: // tteokbokki
-        ctx.beginPath();
-        ctx.moveTo(enemy.x, enemy.y + enemy.height);
-        ctx.lineTo(enemy.x + enemy.width/2, enemy.y);
-        ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height);
-        ctx.closePath();
-        ctx.fill();
-
-        // Add spicy sauce glow effect
-        ctx.shadowColor = '#ff0000';
-        ctx.shadowBlur = 10;
-        ctx.fill();
-        ctx.shadowBlur = 0;
     }
   };
 
@@ -200,9 +225,10 @@ export const TteokbokkiGame = () => {
         }
       }
 
-      // Draw score
+      // Draw score with enhanced visibility
       ctx.fillStyle = '#00ff00';
-      ctx.font = '20px "Courier New"';
+      ctx.font = 'bold 24px "Courier New"';
+      ctx.textAlign = 'left';
       ctx.fillText(`SCORE: ${gameState.score}`, 10, 30);
 
       // Spawn new enemies
@@ -231,7 +257,7 @@ export const TteokbokkiGame = () => {
       if (gameState.gameOver) return;
 
       const newPlayer = { ...gameState.player };
-      const speed = 5;
+      const speed = 12.5; // Increased from 5 to 12.5 (250% increase)
 
       switch (e.key) {
         case 'ArrowLeft':
