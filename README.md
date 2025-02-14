@@ -1,5 +1,13 @@
 # The Terminal Blog 
-## (XTERM/OSX "Terminal.app" Interactive Cybersecurity Educational Blog)
+## ***OSX "xterm-256 / Homebrew" Interactive Cybersecurity Educational dApp***
+(NOTE! NO APPLE PRODUCTS WERE USED IN DEVELOPMENT! HOWEVER, NO CLAIMS OR LIABILITIES ARE HELD.
+
+
+
+
+SEEK GUIDANCE FROM APPLE OR RESPECTIVE BODIES.
+
+
 >[theterminalblog.replit.app](https://theterminalblog.replit.app)
 
 A complex ***proof-of-concept*** (React/Postgres) application to make blog(s) more engaging. 
