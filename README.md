@@ -1,4 +1,5 @@
-# Official Repository for 
+# The Terminal Blog 
+## (XTERM/OSX "Terminal.app" Interactive Cybersecurity Educational Blog)
 >[theterminalblog.replit.app](https://theterminalblog.replit.app)
 
 A complex ***proof-of-concept*** (React/Postgres) application to make blog(s) more engaging. 
