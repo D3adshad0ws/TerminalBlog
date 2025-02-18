@@ -1,5 +1,9 @@
-# The Terminal Blog 
-## ***OSX "xterm-256 / Homebrew" Interactive Cybersecurity Educational dApp***
+# Apple Xterm (xterm) Blog for Cybersecurity: 
+
+Inspired by Xterm - "Homebrew" because I spend too much time inside of the terminal.app 
+having fun with instead 
+of 
+## ***OSX " Interactive Cybersecurity Educational dApp***
 (NOTE! NO APPLE HARDWARE/SOFTWARE IS USED IN THIS APP! THIS CODE IS NOT LICENSED, RATHER A TEST OF THE REPLIT PLATFORM CAPABILITIES!)
 
 
