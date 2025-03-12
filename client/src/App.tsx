@@ -5,8 +5,8 @@ import { AdminPage } from "./pages/AdminPage";
 import { AuthPage } from "./pages/AuthPage";
 import { BlogPostPage } from "./pages/BlogPostPage";
 import { Loader2 } from "lucide-react";
-import { TteokbokkiGame } from "./components/games/TteokbokkiGame";
-import { KartRiderGame } from "./components/games/KartRiderGame";
+// import { TteokbokkiGame } from "./components/games/TteokbokkiGame";
+// import { KartRiderGame } from "./components/games/KartRiderGame";
 import { LoadingTransition } from "./components/LoadingTransition";
 import { useLoading } from "./hooks/use-loading";
 import { useEffect } from "react";
@@ -48,8 +48,6 @@ function App() {
         <Switch>
           <Route path="/login" component={AuthPage} />
           <Route path="/post/:id" component={BlogPostPage} />
-          <Route path="/easter-egg/tteokbokki" component={TteokbokkiGame} />
-          <Route path="/easter-egg/kart-rider" component={KartRiderGame} />
           <Route path="/" component={HomePage} />
           <Route component={HomePage} />
         </Switch>
